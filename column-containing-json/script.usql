@@ -1,0 +1,28 @@
+REFERENCE ASSEMBLY [Newtonsoft.Json];
+REFERENCE ASSEMBLY [Microsoft.Analytics.Samples.Formats];
+
+@rawData =
+    EXTRACT Id int,
+            Name string,
+            JsonString string
+    FROM "/file_with_json_column.tsv"
+    USING Extractors.Tsv(skipFirstNRows:1);
+
+@rawDataWithTuple =
+    SELECT Id,
+           Name,
+           Microsoft.Analytics.Samples.Formats.Json.JsonFunctions.JsonTuple(JsonString) AS JsonTuple
+    FROM @rawData;
+
+@expandedData =
+    SELECT Id,
+           Name,
+           JsonTuple["Year"] AS VehicleYear,
+           JsonTuple["Make"] AS VehicleMake,
+           JsonTuple["Model"] AS VehicleModel
+    FROM @rawDataWithTuple;
+
+
+OUTPUT @expandedData
+TO "/expandedData.tsv"
+USING Outputters.Tsv(outputHeader : true);
